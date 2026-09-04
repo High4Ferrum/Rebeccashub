@@ -1,41 +1,40 @@
-const menuButton = document.querySelector(".menu-button");
-const menu = document.querySelector(".site-nav");
+---
+layout: default
+title: Home
+section: home
+permalink: /
+---
 
-if (menuButton) {
-  menuButton.addEventListener("click", () => {
-    menu.classList.toggle("open");
-    menuButton.textContent = menu.classList.contains("open") ? "Close" : "Menu";
-  });
-}
+<section class="hero">
+  <p class="eyebrow">Rebecca Yener · Florida</p>
+  <h1>A career, a community, and a life worth sharing.</h1>
+  <p class="intro">
+    I’m Rebecca: a supply-chain professional, Florida real estate agent,
+    multilingual communicator, athlete, photographer, and lifelong learner.
+    This is my personal hub for the work I do and the things I love.
+  </p>
+  <a class="button" href="{{ '/professional/' | relative_url }}">Meet Rebecca ↓</a>
+</section>
 
-document.querySelectorAll(".year").forEach((year) => {
-  year.textContent = new Date().getFullYear();
-});
-
-document.querySelectorAll(".filter").forEach((filter) => {
-  filter.addEventListener("click", () => {
-    const selectedTag = filter.dataset.tag;
-
-    document.querySelectorAll(".filter").forEach((item) => {
-      item.classList.remove("active");
-    });
-
-    filter.classList.add("active");
-
-    document.querySelectorAll(".blog-card").forEach((post) => {
-      const tags = post.dataset.tags.toLowerCase().split("|");
-      const shouldShow = selectedTag === "all" || tags.includes(selectedTag.toLowerCase());
-      post.classList.toggle("hidden", !shouldShow);
-    });
-  });
-});
-
-const form = document.querySelector(".contact-form");
-if (form) {
-  form.addEventListener("submit", (event) => {
-    if (form.action.includes("YOUR_FORMSPREE_ID")) {
-      event.preventDefault();
-      alert("Before this form can send messages, add your Formspree form ID in contact.md.");
-    }
-  });
-}
+<section class="wrap">
+  <div class="home-grid">
+    <a class="home-card" href="{{ '/professional/' | relative_url }}">
+      <p class="eyebrow">Career</p><h3>Supply chain & professional life</h3>
+    </a>
+    <a class="home-card" href="{{ '/real-estate/' | relative_url }}">
+      <p class="eyebrow">Florida</p><h3>Real estate, market insights & homes</h3>
+    </a>
+    <a class="home-card" href="{{ '/sport/' | relative_url }}">
+      <p class="eyebrow">Movement</p><h3>Sport, training & everyday energy</h3>
+    </a>
+    <a class="home-card" href="{{ '/side-hustle/' | relative_url }}">
+      <p class="eyebrow">Skills</p><h3>Interpretation, teaching & web work</h3>
+    </a>
+    <a class="home-card" href="{{ '/photography/' | relative_url }}">
+      <p class="eyebrow">Visual diary</p><h3>Photography & quiet observations</h3>
+    </a>
+    <a class="home-card" href="{{ '/things-i-like/' | relative_url }}">
+      <p class="eyebrow">Joy</p><h3>Small things that make life better</h3>
+    </a>
+  </div>
+</section>
