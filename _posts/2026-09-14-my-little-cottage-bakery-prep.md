@@ -12,7 +12,7 @@ excerpt: "A little bakery dream, a festival opportunity, and the shopping and nu
 <p class="eyebrow"><a href="{{ '/side-hustle/' | relative_url }}">Side Hustle</a> · Bakery</p>
 <h1 style="font-family: 'Playfair Display', Georgia, serif; font-size: clamp(34px, 5vw, 56px); line-height: 1.15;">{{ page.title }}</h1>
 <p>By Rebecca Yener · <time datetime="2026-09-14">September 14, 2026</time></p>
-<p><em>Notes written in the days leading up to the September 12, 2026 festival.</em></p>
+<p><em>Notes written in the days leading up to the September 19, 2026 festival.</em></p>
 </header>
 <div markdown="1">
 
@@ -24,7 +24,7 @@ I started baking after college. I know how to make a cake or two and a few kinds
 
 ## An opportunity at the festival
 
-The Orlando Chinese Association is hosting its Mid-Autumn Festival on Saturday, September 12. As one of the organizers, I realized we didn't have many food vendors.
+The Orlando Chinese Association is hosting its Mid-Autumn Festival on Saturday, September 19. As one of the organizers, I realized we didn't have many food vendors.
 
 So I said, "Let me bake something and sell it!"
 
