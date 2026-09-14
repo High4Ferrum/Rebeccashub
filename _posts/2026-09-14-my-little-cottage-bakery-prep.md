@@ -44,6 +44,27 @@ So I went to Temu and started my shopping spree.
 | Table cover and other display items | $30 |
 | **Setup total, before ingredients** | **$196** |
 
+<figure style="margin: 2rem 0;">
+  <a href="{{ '/assets/images/cottage-bakery/bakery-tent.png' | relative_url }}" aria-label="View full-size image: Order screenshot showing the white bakery tent">
+    <img src="{{ '/assets/images/cottage-bakery/bakery-tent.png' | relative_url }}" alt="Order screenshot showing the white bakery tent" loading="lazy" style="display: block; max-width: 100%; height: auto;">
+  </a>
+  <figcaption style="margin-top: 0.5rem; color: var(--muted); font-size: 0.9rem;">The tent for my little bakery setup.</figcaption>
+</figure>
+
+<figure style="margin: 2rem 0;">
+  <a href="{{ '/assets/images/cottage-bakery/foldable-table.png' | relative_url }}" aria-label="View full-size image: Order screenshot showing the foldable table">
+    <img src="{{ '/assets/images/cottage-bakery/foldable-table.png' | relative_url }}" alt="Order screenshot showing the foldable table" loading="lazy" style="display: block; max-width: 100%; height: auto;">
+  </a>
+  <figcaption style="margin-top: 0.5rem; color: var(--muted); font-size: 0.9rem;">A foldable table for the stall.</figcaption>
+</figure>
+
+<figure style="margin: 2rem 0;">
+  <a href="{{ '/assets/images/cottage-bakery/displays-and-packaging.png' | relative_url }}" aria-label="View full-size image: Shopping screenshot showing serving baskets, cookie bags, and a table cover">
+    <img src="{{ '/assets/images/cottage-bakery/displays-and-packaging.png' | relative_url }}" alt="Shopping screenshot showing serving baskets, cookie bags, and a table cover" loading="lazy" style="display: block; max-width: 100%; height: auto;">
+  </a>
+  <figcaption style="margin-top: 0.5rem; color: var(--muted); font-size: 0.9rem;">Displays, packaging, and a table cover.</figcaption>
+</figure>
+
 It is surprising how much there is to organize before I even turn on the oven.
 
 ## Will the numbers work?
@@ -55,6 +76,13 @@ My planning sheet includes butter cookies, cranberry cookies, pecan cookies, ube
 With the $125 in fixed costs entered in that sheet, the estimated profit is $88.98, and the break-even revenue is about $150.
 
 That made me feel a little better. But the sheet's $125 fixed-cost figure is lower than the roughly $196 in setup expenses listed above. The $150 break-even point is a planning estimate based on the sheet's assumptions; it doesn't show recovery of every setup purchase.
+
+<figure style="margin: 2rem 0;">
+  <a href="{{ '/assets/images/cottage-bakery/break-even-analysis.png' | relative_url }}" aria-label="View full-size image: Bakery planning spreadsheet showing 70 items, projected revenue of $256.50, and break-even revenue of $149.84">
+    <img src="{{ '/assets/images/cottage-bakery/break-even-analysis.png' | relative_url }}" alt="Bakery planning spreadsheet showing 70 items, projected revenue of $256.50, and break-even revenue of $149.84" loading="lazy" style="display: block; max-width: 100%; height: auto;">
+  </a>
+  <figcaption style="margin-top: 0.5rem; color: var(--muted); font-size: 0.9rem;">My original break-even planning sheet. Tap the image to see the numbers at full size.</figcaption>
+</figure>
 
 ## A few days to go
 
