@@ -28,3 +28,18 @@ permalink: /side-hustle/
     <p>Placeholder for Orlando Chinese Association website work and content-management experience.</p>
   </article>
 </section>
+
+<section class="wrap section" aria-labelledby="bakery-heading">
+  <h2 id="bakery-heading">Bakery</h2>
+  <div class="card-grid">
+    {% for post in site.categories.bakery %}
+    <article class="card">
+      <p class="eyebrow">Side Hustle · Bakery</p>
+      <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
+      <p><time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%B %-d, %Y" }}</time></p>
+      <p>{{ post.excerpt | strip_html }}</p>
+      <a class="button" href="{{ post.url | relative_url }}">Read the post</a>
+    </article>
+    {% endfor %}
+  </div>
+</section>
