@@ -1,0 +1,10 @@
+import { provider, seal, loginCookie, cookieHeader } from '@/lib/auth';
+import { randomBytes, createHash } from 'node:crypto';
+export async function GET(request:Request){
+ if(process.env.NODE_ENV==='development')return Response.redirect(new URL('/signin-with-chatgpt?return_to=/',request.url));
+ try {
+ const {c,p}=await provider();const state=randomBytes(24).toString('base64url');const nonce=randomBytes(24).toString('base64url');const verifier=randomBytes(32).toString('base64url');
+ const target=new URL(p.authorization_endpoint);target.search=new URLSearchParams({client_id:c.OIDC_CLIENT_ID,redirect_uri:`${c.APP_ORIGIN}/auth/callback`,response_type:'code',scope:'openid email profile',state,nonce,code_challenge:createHash('sha256').update(verifier).digest('base64url'),code_challenge_method:'S256'}).toString();
+ const token=await seal({kind:'login',state,nonce,verifier},'10m');return new Response(null,{status:302,headers:{Location:target.toString(),'Set-Cookie':cookieHeader(loginCookie,token,600),'Cache-Control':'no-store'}});
+ }catch{return new Response('SignOnline sign-in is not configured yet. The owner must connect the sign-in provider before this app can be used.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'no-store'}});}
+}
