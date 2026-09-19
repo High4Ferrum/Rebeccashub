@@ -1,7 +1,10 @@
 import { clerkSettings } from './clerk';
+import { invitationPath } from './invitation';
 
-export function clerkLoginPage(c: Record<string, string>) {
+export function clerkLoginPage(c: Record<string, string>, transaction = '') {
   const { key, issuer } = clerkSettings(c);
+  const destination = invitationPath(transaction);
+  const loginPath = '/auth/login' + (destination === '/' ? '' : destination.slice(1));
   // Values are restricted to URL/key characters before being placed in HTML.
   return new Response(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sign in | SignOnline</title>
 <style>body{margin:0;background:#f5f7f8;color:#182f36;font:16px system-ui}main{max-width:460px;margin:8vh auto;padding:24px}h1{font-size:30px}p{line-height:1.6}a{color:#126657}#message{min-height:25px}button{padding:10px 16px;cursor:pointer}</style>
@@ -12,8 +15,8 @@ export function clerkLoginPage(c: Record<string, string>) {
 await Clerk.load({ui:{ClerkUI:window.__internal_ClerkUICtor}});
 if(Clerk.session){message.textContent='Opening your workspace…';const token=await Clerk.session.getToken();
 const response=await fetch('/auth/clerk',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
-if(!response.ok)throw new Error('Sign-in could not be completed. Please try again.');window.location.replace('/');
-}else{message.textContent='Use an email code to continue.';Clerk.mountSignIn(document.getElementById('sign-in'),{routing:'hash',forceRedirectUrl:window.location.origin+'/auth/login',signUpForceRedirectUrl:window.location.origin+'/auth/login'});}
+if(!response.ok)throw new Error('Sign-in could not be completed. Please try again.');window.location.replace(${JSON.stringify(destination)});
+}else{message.textContent='Use an email code to continue.';Clerk.mountSignIn(document.getElementById('sign-in'),{routing:'hash',forceRedirectUrl:window.location.origin+${JSON.stringify(loginPath)},signUpForceRedirectUrl:window.location.origin+${JSON.stringify(loginPath)}});}
 }catch(error){message.textContent='Secure sign-in is temporarily unavailable. Please reload this page or contact the workspace owner.';}});</script></body></html>`, {
     headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'same-origin' },
   });

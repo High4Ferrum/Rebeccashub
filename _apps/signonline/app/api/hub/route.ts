@@ -31,7 +31,7 @@ export async function GET(request: Request) {
  const events = await db().prepare('SELECT * FROM events WHERE transaction_id = ? ORDER BY created DESC LIMIT 40').bind(r.id).all();
  return { id: r.id, ...JSON.parse(r.data), isOwner: r.owner === user.userId, documents: docs.results.map((d: any) => ({ ...d, fields: JSON.parse(d.fields) })), events: events.results };
  }));
- return Response.json({ transactions, user: { name: user.fullName || user.email, email: user.email } }, { headers: { 'Cache-Control': 'no-store' } });
+ return Response.json({ transactions, user: { name: user.fullName || user.email, email: user.email, isWorkspaceOwner: user.email.toLowerCase() === config().WORKSPACE_OWNER_EMAIL?.toLowerCase() } }, { headers: { 'Cache-Control': 'no-store' } });
  } catch (e) { console.error(e); return bad('The workspace could not be loaded. Please try again.', 503); }
 }
 export async function POST(request: Request) {
