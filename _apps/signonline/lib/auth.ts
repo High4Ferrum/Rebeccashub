@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { cookies, headers } from 'next/headers';
 import { createRemoteJWKSet, jwtVerify, SignJWT } from 'jose';
+import { activeClerkIdentity } from './clerk';
 export type AppUser = { userId: string; displayName: string; email: string; fullName: string | null };
 export const sessionCookie = '__Host-signonline_session';
 export const loginCookie = '__Host-signonline_login';
@@ -25,6 +26,10 @@ export async function getAppUser():Promise<AppUser|null> {
  }
  const token=(await cookies()).get(sessionCookie)?.value; if(!token)return null;
  try { const p=await unseal(token); if(p.kind!=='session'||typeof p.sub!=='string'||typeof p.email!=='string')return null;
+ if(config().NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY){
+   if(p.provider!=='clerk'||typeof p.sid!=='string'||typeof p.clerkSub!=='string'||p.sub!==`clerk:${p.clerkSub}`)return null;
+   return await activeClerkIdentity(config(),p.sid,p.clerkSub);
+ }
  const name=typeof p.name==='string'?p.name:null;
  return {userId:p.sub,email:p.email.toLowerCase(),displayName:name||p.email,fullName:name};
  } catch {return null;}

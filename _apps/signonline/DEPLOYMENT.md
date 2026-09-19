@@ -2,7 +2,7 @@
 
 Target: `https://signonline.rebeccayener.com`
 
-Status: source prepared; no hosting resources have been created and DNS has not been changed. Do not announce the app as live until hosted authentication, uploads, participant isolation, and HTTPS have been verified.
+Status: deployed to Cloudflare Pages with private R2 and D1. Custom domain HTTPS is active. Clerk email-code sign-in is being connected; live owner/participant verification remains required before use with client documents.
 
 ## Hosting
 
@@ -13,6 +13,12 @@ Create a Cloudflare account and a Pages project connected to `High4Ferrum/Rebecc
 Create a D1 database and bind it as `DB`. Apply the committed SQL migrations in `drizzle/` once, in order, before serving requests. Create an R2 bucket and bind it as `BUCKET`; keep public access disabled. Do not use the local placeholder database ID in production. Redeploy after changing bindings or runtime variables. R2 activation may require billing details; the account owner must review applicable charges.
 
 ## Sign-in
+
+Production now supports Clerk email verification codes. In Pages production variables set `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` to the production publishable key, `CLERK_SECRET_KEY` as an encrypted secret, and `AUTH_SESSION_SECRET` as a randomly generated encrypted secret (at least 32 bytes). Keep `APP_ORIGIN=https://signonline.rebeccayener.com` and `WORKSPACE_OWNER_EMAIL=lulu.yener@hotmail.com`. Redeploy after changing variables. Do not use development Clerk keys in production.
+
+Clerk's production domain records must be verified and email-code sign-up/sign-in enabled. `/auth/login` loads the official Clerk JavaScript UI. `/auth/clerk` accepts same-origin POSTs only, validates the signed, unexpired Clerk JWT and its issuer/authorized origin, confirms the active session and verified primary email through Clerk's server API, and creates an eight-hour HttpOnly app session. Protected requests check Clerk session status and current verified email again. Sign-out revokes the Clerk session. Provider failure denies access. No secret keys or client-supplied email identities reach browser configuration. Users can register, but only the configured owner can create transactions and participants can access only transactions assigned to their verified email.
+
+The OIDC implementation below is a fallback only when no Clerk publishable key is configured.
 
 The original local preview identity is not trusted in production. Production uses the OpenID Connect authorization-code flow with PKCE, state, nonce, signed identity-token verification, and eight-hour Secure/HttpOnly sessions.
 
