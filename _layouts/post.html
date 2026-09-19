@@ -11,9 +11,9 @@
   <header class="site-header">
     <a class="logo" href="{{ '/' | relative_url }}">RY<span>.</span></a>
 
-    <button class="menu-button" type="button" aria-label="Open menu">Menu</button>
+    <button class="menu-button" type="button" aria-label="Open menu" aria-controls="site-navigation" aria-expanded="false">Menu</button>
 
-    <nav class="site-nav">
+    <nav id="site-navigation" class="site-nav">
       <a class="{% if page.section == 'home' %}active{% endif %}" href="{{ '/' | relative_url }}">Home</a>
       <a class="{% if page.section == 'professional' %}active{% endif %}" href="{{ '/professional/' | relative_url }}">Professional</a>
       <a class="{% if page.section == 'sport' %}active{% endif %}" href="{{ '/sport/' | relative_url }}">Sport</a>

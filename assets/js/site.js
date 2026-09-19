@@ -4,7 +4,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const menuButton = document.querySelector(".menu-button");
   const nav = document.querySelector(".site-nav");
-  if (menuButton && nav) menuButton.addEventListener("click", () => nav.classList.toggle("open"));
+  if (menuButton && nav) {
+    const setMenuOpen = open => {
+      nav.classList.toggle("open", open);
+      menuButton.setAttribute("aria-expanded", String(open));
+      menuButton.setAttribute("aria-label", open ? "Close menu" : "Open menu");
+    };
+    menuButton.addEventListener("click", () => setMenuOpen(!nav.classList.contains("open")));
+    nav.addEventListener("click", event => {
+      if (event.target.closest("a")) setMenuOpen(false);
+    });
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && nav.classList.contains("open")) {
+        setMenuOpen(false);
+        menuButton.focus();
+      }
+    });
+    window.matchMedia("(max-width: 620px)").addEventListener("change", () => setMenuOpen(false));
+  }
 
   const filters = document.querySelectorAll(".filter");
   const cards = document.querySelectorAll(".blog-card");
