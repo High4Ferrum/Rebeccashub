@@ -1,6 +1,7 @@
 import { getAppUser as getChatGPTUser, config } from '@/lib/auth';
 import { db, bucket, record } from '@/lib/storage';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { recipientFields } from '@/lib/recipient-fields';
 export const dynamic = 'force-dynamic';
 const bad = (message: string, status = 400) => Response.json({ error: message }, { status });
 async function signedKey(id: string, fields: string) {
@@ -61,7 +62,7 @@ export async function POST(request: Request) {
  await db().prepare('INSERT INTO transactions (id, owner, data, created) VALUES (?, ?, ?, ?)').bind(id, user.userId, JSON.stringify(data), new Date().toISOString()).run();
  await record(id, 'Transaction workspace created'); return Response.json({ id });
  }
- const t = await transaction(b.transactionId, user, b.action !== 'sign'); if (!t) return bad('Transaction not found.', 404);
+ const t = await transaction(b.transactionId, user, !['sign','recipientFields'].includes(b.action)); if (!t) return bad('Transaction not found.', 404);
  if (b.action === 'participant') {
  if (!b.name?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email) || !['Buyer','Seller','Buyer agent','Seller agent','Tenant','Landlord'].includes(b.role)) return bad('Enter a name, valid email, and role.');
  if (t.participants.some((p: any) => p.email.toLowerCase() === b.email.toLowerCase())) return bad('This participant is already added.');
@@ -70,6 +71,23 @@ export async function POST(request: Request) {
  }
  const doc: any = await db().prepare('SELECT * FROM documents WHERE id = ? AND transaction_id = ?').bind(b.documentId, t.id).first();
  if (!doc) return bad('Document not found.', 404);
+ if(b.action==='recipientEditing'){
+ if(typeof b.enabled!=='boolean')return bad('Invalid permission.');
+ const data=JSON.parse(t.data);data.recipientEditing={...data.recipientEditing,[doc.id]:b.enabled};
+ const changed=await db().prepare('UPDATE transactions SET data = ? WHERE id = ? AND data = ?').bind(JSON.stringify(data),t.id,t.data).run();
+ if(!changed.meta.changes)return bad('Transaction changed. Please retry.',409);
+ await record(t.id,`${user.email} turned recipient field editing ${b.enabled?'on':'off'} for ${doc.name}`);return Response.json({ok:true});
+ }
+ if(b.action==='recipientFields'){
+ if(t.isOwner||t.recipientEditing?.[doc.id]===false||doc.status!=='Awaiting signatures')return bad('Recipient editing is not available for this document.',403);
+ if(JSON.stringify(b.baseFields)!==doc.fields)return bad('The document changed. Reopen it before editing.',409);
+ const original=await bucket().get(doc.id);if(!original)return bad('Original PDF unavailable.',503);
+ const source=await PDFDocument.load(await original.arrayBuffer());let updated;
+ try{updated=recipientFields(JSON.parse(doc.fields),b.fields,user.email.toLowerCase(),source.getPageCount());}catch(e){return bad(e instanceof Error?e.message:'Invalid fields.');}
+ const changed=await db().prepare("UPDATE documents SET fields = ? WHERE id = ? AND fields = ? AND status = 'Awaiting signatures' AND EXISTS (SELECT 1 FROM transactions WHERE id = ? AND data = ?)").bind(JSON.stringify(updated),doc.id,doc.fields,t.id,t.data).run();
+ if(!changed.meta.changes)return bad('Fields or permissions changed. Reopen the document.',409);
+ await record(t.id,`${user.email} adjusted their unfinished fields on ${doc.name}`);return Response.json({ok:true});
+ }
  if (b.action === 'prepareRecipients') {
  const fields=JSON.parse(doc.fields);
  if (!['Draft','Awaiting signatures'].includes(doc.status)||fields.some((f:any)=>f.value!==''&&f.value!==null&&f.value!==undefined)) return bad('A document with completed fields cannot be reassigned.');
