@@ -70,6 +70,17 @@ export async function POST(request: Request) {
  }
  const doc: any = await db().prepare('SELECT * FROM documents WHERE id = ? AND transaction_id = ?').bind(b.documentId, t.id).first();
  if (!doc) return bad('Document not found.', 404);
+ if (b.action === 'prepareRecipients') {
+ const fields=JSON.parse(doc.fields);
+ if (!['Draft','Awaiting signatures'].includes(doc.status)||fields.some((f:any)=>f.value!==''&&f.value!==null&&f.value!==undefined)) return bad('A document with completed fields cannot be reassigned.');
+ if (!fields.length||!Array.isArray(b.assignments)||b.assignments.length!==fields.length||new Set(b.assignments.map((a:any)=>a.id)).size!==fields.length) return bad('Assign every field to a signer.');
+ const emails=new Map(b.assignments.map((a:any)=>[a.id,typeof a.email==='string'?a.email.trim().toLowerCase():'']));
+ if(fields.some((f:any)=>!emails.has(f.id)||!emails.get(f.id)||(emails.get(f.id)!==user.email.toLowerCase()&&!t.participants.some((p:any)=>p.email===emails.get(f.id)))))return bad('Add each recipient as a participant before assigning their fields.');
+ const updated=fields.map((f:any)=>({...f,email:emails.get(f.id)}));
+ const saved=await db().prepare("UPDATE documents SET fields = ?, status = 'Awaiting signatures' WHERE id = ? AND fields = ? AND status = ?").bind(JSON.stringify(updated),doc.id,doc.fields,doc.status).run();
+ if(!saved.meta.changes)return bad('The document changed. Refresh before continuing.',409);
+ await record(t.id,`${doc.name}: signing recipients saved`);return Response.json({ok:true});
+ }
  if (b.action === 'fields') {
  if (doc.status !== 'Draft') return bad('Sent or signed documents are locked.');
  if (!Array.isArray(b.fields) || b.fields.length > 150 || b.fields.some((f: any) => !['text','date','checkbox','initial','signature'].includes(f.type) || !Number.isInteger(f.page) || f.page < 1 || !Number.isFinite(f.x) || !Number.isFinite(f.y) || f.x < 0 || f.x > .75 || f.y < 0 || f.y > .95 || !f.id || typeof f.email !== 'string')) return bad('Invalid document fields.');
