@@ -1,11 +1,13 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 export default function ShareDocument({doc,transaction,user,notify,mutate,busy}:any){
  const current=transaction.documents.find((d:any)=>d.id===doc.id)||doc;
  const [assignments,setAssignments]=useState<Record<string,string>>({});
  const [selected,setSelected]=useState<string[]>([]);
  const [editing,setEditing]=useState(false);
+ const emailAttempt=useRef<{selection:string,id:string}|null>(null);
+ const [sending,setSending]=useState(false);
  const fields=current.fields||[];
  const signed=fields.some((f:any)=>f.value!==''&&f.value!==null&&f.value!==undefined);
  const canPrepare=transaction.isOwner&&current.status!=='Signed'&&!signed;
@@ -22,6 +24,6 @@ export default function ShareDocument({doc,transaction,user,notify,mutate,busy}:
  <h3>{current.status==='Signed'?'Recipients':'3. Select recipients and share'}</h3>
  {!eligible.length&&<p>Add a recipient and assign at least one field to their email before sharing a signature request.</p>}
  {eligible.map((p:any)=><label key={p.email}><input type="checkbox" checked={recipients.includes(p.email)} onChange={e=>setSelected(e.target.checked?[...selected,p.email]:selected.filter(x=>x!==p.email))}/>{p.name} · {p.email}</label>)}
- {ready?<><button className="button secondary wide" onClick={async()=>{try{await navigator.clipboard.writeText(link);notify('Invitation link copied for the selected recipients.');}catch{notify('Copy the link shown below.');}}}>Copy invitation link</button><input className="share-link" value={link} readOnly aria-label="Invitation link"/><a className="button primary wide" href={`mailto:${recipients.join(',')}?subject=${encodeURIComponent(`${current.status==='Signed'?'Completed document':'Signature requested'}: ${transaction.address}`)}&body=${encodeURIComponent(`Open your transaction: ${link}\n\nSign in using the email address this invitation was sent to.`)}`}>Open email draft</a><p className="inline-note">The link opens this transaction only for authorized participants. Changing the recipient in your email app does not grant access. Email is not sent automatically.</p></>:<p className="inline-note">Save the signing assignments and select a recipient to enable sharing.</p>}
+ {ready?<><button className="button secondary wide" onClick={async()=>{try{await navigator.clipboard.writeText(link);notify('Invitation link copied for the selected recipients.');}catch{notify('Copy the link shown below.');}}}>Copy invitation link</button><input className="share-link" value={link} readOnly aria-label="Invitation link"/>{transaction.isOwner&&<button className="button primary wide" disabled={busy||sending} onClick={async()=>{if(sending)return;setSending(true);const selection=JSON.stringify([current.id,current.status,[...recipients].sort()]);if(emailAttempt.current?.selection!==selection)emailAttempt.current={selection,id:crypto.randomUUID()};try{await mutate({action:'email',transactionId:transaction.id,documentId:current.id,recipients,requestId:emailAttempt.current.id});emailAttempt.current=null;notify('Email accepted for sending. Ask the recipient to check their inbox and spam folder.');}catch{}finally{setSending(false);}}}>{sending?'Sending…':'Send email'}</button>}<p className="inline-note">Each selected recipient receives a separate email with a secure transaction link. They must sign in with their invited email. Completed PDFs can be downloaded inside the transaction.</p></>:<p className="inline-note">Save the signing assignments and select a recipient to enable sharing.</p>}
  </>;
 }

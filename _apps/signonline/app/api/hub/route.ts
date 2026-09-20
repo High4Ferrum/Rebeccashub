@@ -2,6 +2,7 @@ import { getAppUser as getChatGPTUser, config } from '@/lib/auth';
 import { db, bucket, record } from '@/lib/storage';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { recipientFields } from '@/lib/recipient-fields';
+import { emailRecipients, sendDocumentEmail } from '@/lib/email';
 export const dynamic = 'force-dynamic';
 const bad = (message: string, status = 400) => Response.json({ error: message }, { status });
 async function signedKey(id: string, fields: string) {
@@ -71,6 +72,17 @@ export async function POST(request: Request) {
  }
  const doc: any = await db().prepare('SELECT * FROM documents WHERE id = ? AND transaction_id = ?').bind(b.documentId, t.id).first();
  if (!doc) return bad('Document not found.', 404);
+ if(b.action==='email'){
+ if(typeof b.requestId!=='string'||!/^[a-zA-Z0-9-]{16,80}$/.test(b.requestId))return bad('Invalid email request.');
+ let recipients:string[];
+ try{recipients=emailRecipients(b.recipients,t.participants,doc);}catch(e){return bad((e as Error).message);}
+ if(!config().RESEND_API_KEY)return bad('Email sending is not configured.',503);
+ for(const recipient of recipients){
+ try{await sendDocumentEmail(config().RESEND_API_KEY,doc,t.id,recipient,b.requestId);}catch{return bad(`Could not confirm email to ${recipient}. Retry with the same selection; already accepted messages will not be duplicated.`,502);}
+ }
+ await record(t.id,`${doc.name}: email accepted by Resend for ${recipients.join(', ')}`);
+ return Response.json({ok:true});
+ }
  if(b.action==='recipientEditing'){
  if(typeof b.enabled!=='boolean')return bad('Invalid permission.');
  const data=JSON.parse(t.data);data.recipientEditing={...data.recipientEditing,[doc.id]:b.enabled};
