@@ -1,3 +1,4 @@
+import { validFieldSize } from '@/lib/field-size';
 import { TERMS_VERSION, TERMS_TEXT, SIGNING_CONSENT } from '@/lib/consent';
 import { hashBytes, requestEvidence, auditPdf } from '@/lib/audit';
 import { getAppUser as getChatGPTUser, config } from '@/lib/auth';
@@ -135,11 +136,11 @@ export async function POST(request: Request) {
  }
  if (b.action === 'fields') {
  if (doc.status !== 'Draft') return bad('Sent or signed documents are locked.');
- if (!Array.isArray(b.fields) || b.fields.length > 150 || b.fields.some((f: any) => !['text','date','checkbox','initial','signature'].includes(f.type) || !Number.isInteger(f.page) || f.page < 1 || !Number.isFinite(f.x) || !Number.isFinite(f.y) || f.x < 0 || f.x > .75 || f.y < 0 || f.y > .95 || !f.id || typeof f.email !== 'string')) return bad('Invalid document fields.');
+ if (!Array.isArray(b.fields) || b.fields.length > 150 || b.fields.some((f: any) => !validFieldSize(f) || !['text','date','checkbox','initial','signature'].includes(f.type) || !Number.isInteger(f.page) || f.page < 1 || !Number.isFinite(f.x) || !Number.isFinite(f.y) || f.x < 0 || f.x > .75 || f.y < 0 || f.y > .95 || !f.id || typeof f.email !== 'string')) return bad('Invalid document fields.');
  const original = await bucket().get(doc.id); if (!original) return bad('Original PDF unavailable.', 503);
  const source = await PDFDocument.load(await original.arrayBuffer());
  if (b.fields.some((f: any) => f.page > source.getPageCount()) || new Set(b.fields.map((f: any)=>f.id)).size !== b.fields.length) return bad('Invalid page or duplicate field.');
- const saved = await db().prepare("UPDATE documents SET fields = ? WHERE id = ? AND status = 'Draft'").bind(JSON.stringify(b.fields.map((f: any) => ({ id: f.id, type: f.type, page: f.page, x: f.x, y: f.y, email: f.email.toLowerCase(), value: '' }))), doc.id).run();
+ const saved = await db().prepare("UPDATE documents SET fields = ? WHERE id = ? AND status = 'Draft'").bind(JSON.stringify(b.fields.map((f: any) => ({ width:f.width??.24,height:f.height??.028,id: f.id, type: f.type, page: f.page, x: f.x, y: f.y, email: f.email.toLowerCase(), value: '' }))), doc.id).run();
  if (!saved.meta.changes) return bad('The document was just sent. Refresh before continuing.', 409);
  await record(t.id, `Fields saved on ${doc.name}`); return Response.json({ ok: true });
  }
@@ -156,7 +157,7 @@ export async function POST(request: Request) {
  if (!mine.length) return bad('No fields are assigned to your signed-in email.');
  const sourceFile=await bucket().get(doc.id);if(!sourceFile)return bad('Original PDF unavailable.',503);
  const sourceBytes=await sourceFile.arrayBuffer();
- const audit={eventId:crypto.randomUUID(),email:user.email,accountId:user.userId,signedAt:new Date().toISOString(),...requestEvidence(request),consentVersion:TERMS_VERSION,consentText:SIGNING_CONSENT,accountConsent:JSON.parse(accountConsent.message),originalPdfSha256:await hashBytes(sourceBytes),priorFieldStateSha256:await hashBytes(new TextEncoder().encode(doc.fields)),submittedEntries:mine.map((f:any)=>({fieldId:f.id,type:f.type,page:f.page,x:f.x,y:f.y,value:b.values?.[f.id]})),fieldIds:mine.map((f:any)=>f.id)};
+ const audit={eventId:crypto.randomUUID(),email:user.email,accountId:user.userId,signedAt:new Date().toISOString(),...requestEvidence(request),consentVersion:TERMS_VERSION,consentText:SIGNING_CONSENT,accountConsent:JSON.parse(accountConsent.message),originalPdfSha256:await hashBytes(sourceBytes),priorFieldStateSha256:await hashBytes(new TextEncoder().encode(doc.fields)),submittedEntries:mine.map((f:any)=>({fieldId:f.id,type:f.type,page:f.page,x:f.x,y:f.y,width:f.width??.24,height:f.height??.028,value:b.values?.[f.id]})),fieldIds:mine.map((f:any)=>f.id)};
  for (const f of mine) {
  const v = b.values?.[f.id]; if (f.type === 'checkbox' ? v !== true : typeof v !== 'string' || !v.trim() || v.length > 150 || /[^\x20-\x7E]/.test(v)) return bad('Complete all your fields using standard English characters.');
  f.value = v; f.signedAt = audit.signedAt; f.signedBy = user.userId; f.audit = audit;
@@ -169,8 +170,8 @@ export async function POST(request: Request) {
  const page = pdf.getPages()[f.page - 1]; if (!page) return bad('A field refers to a missing page.');
  const { width, height } = page.getSize(); const value = f.type === 'checkbox' ? 'X' : String(f.value);
  const face = ['signature','initial'].includes(f.type) ? cursive : font;
- const size = Math.min(14, (width * .23) / Math.max(face.widthOfTextAtSize(value, 1), 1));
- page.drawText(value, { x: f.x * width + 3, y: height - f.y * height - 18, size, font: face, color: rgb(.08,.16,.25) });
+ const size = Math.min(14, Math.max(1,height*(f.height??.028)-6), Math.max(1,width*(f.width??.24)-6) / Math.max(face.widthOfTextAtSize(value, 1), 1));
+ page.drawText(value, { x: f.x * width + 3, y: height - f.y * height - 3 - size, size, font: face, color: rgb(.08,.16,.25) });
  }
  await bucket().put(await signedKey(doc.id, JSON.stringify(fields)), await pdf.save(), { httpMetadata: { contentType: 'application/pdf' } });
  }

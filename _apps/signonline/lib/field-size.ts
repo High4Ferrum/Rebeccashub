@@ -1,0 +1,1 @@
+export function validFieldSize(f:{x:number;y:number;width?:number;height?:number}){const w=f.width??.24,h=f.height??.028;return Number.isFinite(w)&&Number.isFinite(h)&&w>=.04&&h>=.015&&w<=1-f.x+1e-9&&h<=1-f.y+1e-9;}
