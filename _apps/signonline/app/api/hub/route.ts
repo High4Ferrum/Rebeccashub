@@ -1,3 +1,5 @@
+import { TERMS_VERSION, TERMS_TEXT, SIGNING_CONSENT } from '@/lib/consent';
+import { hashBytes, requestEvidence, auditPdf } from '@/lib/audit';
 import { getAppUser as getChatGPTUser, config } from '@/lib/auth';
 import { db, bucket, record } from '@/lib/storage';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
@@ -19,7 +21,18 @@ async function transaction(id: string, user: any, ownerOnly = false) {
 export async function GET(request: Request) {
  try {
  const user = await getChatGPTUser(); if (!user) return bad('Please sign in to your workspace.', 401);
+ const consent:any=await db().prepare('SELECT message FROM events WHERE id = ?').bind('consent:'+user.userId+':'+TERMS_VERSION).first();
+ if(!consent)return Response.json({transactions:[],user:{email:user.email,name:user.fullName||user.email,needsTerms:true}},{headers:{'Cache-Control':'no-store'}});
  const q = new URL(request.url).searchParams;
+ if(q.has('audit')){
+ const doc:any=await db().prepare('SELECT * FROM documents WHERE id = ?').bind(q.get('audit')).first();
+ if(!doc||!await transaction(doc.transaction_id,user))return bad('Document not found.',404);
+ const original=await bucket().get(doc.id);if(!original)return bad('Original unavailable.',503);
+ const fields=JSON.parse(doc.fields);const records=Array.from(new Map(fields.filter((f:any)=>f.audit).map((f:any)=>[f.audit.eventId,f.audit])).values());
+ let completedPdfSha256=null;if(doc.status==='Signed'){const file=await bucket().get(await signedKey(doc.id,doc.fields));if(!file)return bad('Completed PDF unavailable.',503);completedPdfSha256=await hashBytes(await file.arrayBuffer());}
+ const report={title:'SignOnline signing audit record',documentId:doc.id,documentName:doc.name,transactionId:doc.transaction_id,status:doc.status,generatedAt:new Date().toISOString(),originalPdfSha256:await hashBytes(await original.arrayBuffer()),completedPdfSha256,signingEvents:records,legacyFieldsWithoutDetailedEvidence:fields.filter((f:any)=>f.signedAt&&!f.audit).map((f:any)=>({fieldId:f.id,email:f.email,signedAt:f.signedAt,accountId:f.signedBy})),notice:'Supporting evidence, not notarization or independent identity verification. Earlier signatures may lack detailed evidence. Hashes alone do not prevent an administrator from altering stored records.'};
+ return new Response(new Uint8Array(await auditPdf(report)),{headers:{'Content-Type':'application/pdf','Content-Disposition':'attachment; filename="signonline-audit.pdf"','Cache-Control':'private, no-store'}});
+ }
  if (q.has('file')) {
  const doc: any = await db().prepare('SELECT * FROM documents WHERE id = ?').bind(q.get('file')).first();
  if (!doc || !await transaction(doc.transaction_id, user)) return bad('Document not found.', 404);
@@ -40,7 +53,10 @@ export async function POST(request: Request) {
  try {
  const user = await getChatGPTUser(); if (!user) return bad('Please sign in.', 401);
  if (request.headers.get('origin') && request.headers.get('origin') !== new URL(request.url).origin) return bad('Invalid origin.', 403);
+ const consentId='consent:'+user.userId+':'+TERMS_VERSION;
+ const accountConsent:any=await db().prepare('SELECT message FROM events WHERE id = ?').bind(consentId).first();
  if (request.headers.get('content-type')?.includes('multipart/form-data')) {
+ if(!accountConsent)return bad('Accept the electronic transaction terms first.',403);
  const form = await request.formData(); const tid = String(form.get('transactionId')); const t = await transaction(tid, user, true);
  if (!t) return bad('Transaction not found.', 404);
  const files = form.getAll('files') as File[];
@@ -56,6 +72,12 @@ export async function POST(request: Request) {
  return Response.json({ ok: true });
  }
  const b: any = await request.json();
+ if(b.action==='acceptTerms'){
+ if(b.accepted!==true||b.version!==TERMS_VERSION)return bad('Review and accept the current terms.',400);
+ const evidence={version:TERMS_VERSION,text:TERMS_TEXT,email:user.email,accountId:user.userId,acceptedAt:new Date().toISOString(),...requestEvidence(request)};
+ await db().prepare('INSERT OR IGNORE INTO events (id, transaction_id, message, created) VALUES (?, ?, ?, ?)').bind(consentId,'account-consent',JSON.stringify(evidence),evidence.acceptedAt).run();return Response.json({ok:true});
+ }
+ if(!accountConsent)return bad('Accept the electronic transaction terms first.',403);
  if (b.action === 'create') {
  if (process.env.NODE_ENV !== 'development' && (!config().WORKSPACE_OWNER_EMAIL || user.email.toLowerCase() !== config().WORKSPACE_OWNER_EMAIL.toLowerCase())) return bad('Only the workspace owner can create transactions.', 403);
  if (!b.address?.trim() || !['Sale','Purchase','Lease'].includes(b.type)) return bad('Enter an address and transaction type.');
@@ -129,12 +151,15 @@ export async function POST(request: Request) {
  await record(t.id, `${doc.name} prepared for signing — invitation links ready to share`); return Response.json({ ok: true });
  }
  if (b.action === 'sign') {
- if (doc.status !== 'Awaiting signatures' || b.consent !== true) return bad('This document is not ready to sign.');
+ if (doc.status !== 'Awaiting signatures' || b.consent !== true || b.consentVersion !== TERMS_VERSION) return bad('This document is not ready to sign.');
  const fields = JSON.parse(doc.fields); const mine = fields.filter((f: any) => f.email === user.email.toLowerCase() && !f.value);
  if (!mine.length) return bad('No fields are assigned to your signed-in email.');
+ const sourceFile=await bucket().get(doc.id);if(!sourceFile)return bad('Original PDF unavailable.',503);
+ const sourceBytes=await sourceFile.arrayBuffer();
+ const audit={eventId:crypto.randomUUID(),email:user.email,accountId:user.userId,signedAt:new Date().toISOString(),...requestEvidence(request),consentVersion:TERMS_VERSION,consentText:SIGNING_CONSENT,accountConsent:JSON.parse(accountConsent.message),originalPdfSha256:await hashBytes(sourceBytes),priorFieldStateSha256:await hashBytes(new TextEncoder().encode(doc.fields)),submittedEntries:mine.map((f:any)=>({fieldId:f.id,type:f.type,page:f.page,x:f.x,y:f.y,value:b.values?.[f.id]})),fieldIds:mine.map((f:any)=>f.id)};
  for (const f of mine) {
  const v = b.values?.[f.id]; if (f.type === 'checkbox' ? v !== true : typeof v !== 'string' || !v.trim() || v.length > 150 || /[^\x20-\x7E]/.test(v)) return bad('Complete all your fields using standard English characters.');
- f.value = v; f.signedAt = new Date().toISOString(); f.signedBy = user.userId;
+ f.value = v; f.signedAt = audit.signedAt; f.signedBy = user.userId; f.audit = audit;
  }
  const done = fields.every((f: any) => f.value);
  if (done) {
@@ -156,3 +181,4 @@ export async function POST(request: Request) {
  return bad('Unknown action.');
  } catch (e) { console.error(e); return bad('Your changes could not be saved. Please try again.', 503); }
 }
+
