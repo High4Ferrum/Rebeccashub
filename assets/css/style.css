@@ -7,6 +7,19 @@
 }
 
 /* New York travel journal */
+/* Community business support */
+.business-story{border-top:1px solid var(--line);scroll-margin-top:100px}
+.business-story h2{font-family:'Playfair Display',Georgia,serif;font-size:clamp(32px,4.5vw,52px);font-weight:500;line-height:1.15;max-width:850px;margin:0 0 28px}
+.business-copy{max-width:780px;font-size:18px;line-height:1.8}
+.business-copy h3{font-family:'Playfair Display',Georgia,serif;font-size:30px;line-height:1.2;font-weight:500}
+.business-story figure{margin:0;min-width:0}
+.business-story img{display:block;width:100%;height:auto;border-radius:4px}
+.business-story figcaption{font-size:14px;line-height:1.5;color:var(--muted);margin-top:10px}
+.business-photos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin:36px 0 54px}
+.business-behind-scenes{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);gap:48px;align-items:center;margin-bottom:54px}
+.business-team{max-width:900px}
+@media(max-width:620px){.business-photos,.business-behind-scenes{grid-template-columns:1fr;gap:28px}.business-copy{font-size:17px}}
+
 .ny-trip{max-width:860px;font-size:18px;line-height:1.8}
 .ny-trip h1{font-family:'Playfair Display',Georgia,serif;font-size:clamp(38px,6vw,64px);font-weight:500;line-height:1.12;margin:12px 0 20px}
 .ny-trip h2{font-family:'Playfair Display',Georgia,serif;font-size:clamp(27px,4vw,36px);line-height:1.25;margin-top:52px}
