@@ -10,7 +10,7 @@ excerpt: "My favorite shortbread cookies, with butter, brown sugar, and vanilla.
 
 <article class="wrap section" style="max-width: 760px;">
 <header>
-<p class="eyebrow"><a href="{{ '/things-i-like/' | relative_url }}">Things I Like</a> · Receipt</p>
+<p class="eyebrow"><a href="{{ '/things-i-like/' | relative_url }}">Things I Like</a> · Recipe</p>
 <h1 style="font-family: 'Playfair Display', Georgia, serif; font-size: clamp(34px, 5vw, 56px); line-height: 1.15;">{{ page.title }}</h1>
 <p>By Rebecca Yener · <time datetime="2026-09-19">September 19, 2026</time></p>
 </header>
