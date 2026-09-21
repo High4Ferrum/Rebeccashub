@@ -5,3 +5,17 @@
   .site-nav.open a{display:block;padding:12px 0}
   .menu-button{min-height:44px;min-width:44px;cursor:pointer}
 }
+
+/* New York travel journal */
+.ny-trip{max-width:860px;font-size:18px;line-height:1.8}
+.ny-trip h1{font-family:'Playfair Display',Georgia,serif;font-size:clamp(38px,6vw,64px);font-weight:500;line-height:1.12;margin:12px 0 20px}
+.ny-trip h2{font-family:'Playfair Display',Georgia,serif;font-size:clamp(27px,4vw,36px);line-height:1.25;margin-top:52px}
+.ny-trip .trip-date,.ny-trip figcaption{color:var(--muted);font-size:14px}
+.trip-photos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin:28px 0}
+.trip-photos figure{margin:0;min-width:0}
+.trip-photos img{display:block;width:100%;height:auto;border-radius:4px}
+.trip-photos figcaption{line-height:1.5;margin-top:10px}
+.trip-wide{grid-column:1/-1}
+.trip-single{grid-template-columns:minmax(0,520px);justify-content:center}
+#travel{scroll-margin-top:100px}
+@media(max-width:620px){.trip-photos{grid-template-columns:1fr}.ny-trip{font-size:17px}}
