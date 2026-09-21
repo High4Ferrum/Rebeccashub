@@ -29,13 +29,13 @@ permalink: /things-i-like/
   </article>
 </section>
 
-<section class="wrap section" aria-labelledby="receipt-heading">
-  <h2 id="receipt-heading">Receipt</h2>
+<section class="wrap section" aria-labelledby="recipe-heading">
+  <h2 id="recipe-heading">Recipe</h2>
   <div class="card-grid">
     {% for post in site.categories.things-i-like %}
-    {% if post.tags contains 'Receipt' %}
+    {% if post.tags contains 'Recipe' %}
     <article class="card">
-      <p class="eyebrow">Things I Like · Receipt</p>
+      <p class="eyebrow">Things I Like · Recipe</p>
       <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
       <p>{{ post.excerpt | strip_html }}</p>
       <a class="button" href="{{ post.url | relative_url }}">Read the recipe</a>
