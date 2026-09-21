@@ -4,7 +4,7 @@ title: "My Favorite Shortbread Cookies"
 date: 2026-09-19
 section: things
 categories: [things-i-like]
-tags: [Receipt]
+tags: [Recipe]
 excerpt: "My favorite shortbread cookies, with butter, brown sugar, and vanilla."
 ---
 
