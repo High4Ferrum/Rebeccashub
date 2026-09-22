@@ -15,7 +15,7 @@ permalink: /real-estate/
   <article class="card">
     <p class="eyebrow">SignOnline</p>
     <h3>Meet my SignOnline app</h3>
-    <p>Explore my SignOnline app. Use the link below to get started.</p>
+    <p>I got tired of the high fees of transaction management app. So I built a better solution! SignOnline is officially live! Experience seamless document signing without the hefty price tag. Sign. Seal. Deliver.</p>
     <a class="button" href="https://signonline.rebeccayener.com/">Use SignOnline Now</a>
   </article>
   <article class="card">
