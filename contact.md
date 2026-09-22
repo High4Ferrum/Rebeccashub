@@ -9,7 +9,7 @@ permalink: /contact/
   <div class="wrap">
     <p class="eyebrow">Contact</p>
     <h1>Let’s connect.</h1>
-    <p class="intro">For real estate, professional opportunities, collaborations, or a simple hello.</p>
+    <p class="intro">For professional opportunities, real estate inquiries, collaborations, or a simple hello.</p>
 
     <form class="contact-form" action="https://formspree.io/f/YOUR_FORMSPREE_ID" method="POST">
       <input name="name" type="text" placeholder="Your name" required>
