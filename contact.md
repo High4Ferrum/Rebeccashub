@@ -19,6 +19,6 @@ permalink: /contact/
       <button type="submit">Send message</button>
     </form>
 
-    <p class="form-note">Or email me directly: <a href="mailto:rebecca.yener@gmail.com">rebecca.yener@gmail.com</a></p>
+    <p class="form-note">Or email me directly: <a href="mailto:me@rebeccayener.com">me@rebeccayener.com</a></p>
   </div>
 </section>
