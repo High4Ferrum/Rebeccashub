@@ -21,13 +21,31 @@ permalink: /side-hustle/
   <article class="card">
     <p class="eyebrow">Education</p>
     <h3>Chinese language teaching</h3>
-    <p>Placeholder for Chinese-as-a-second-language teaching experience, lessons, and resources.</p>
+    <p>My journey from tutoring in Türkiye to teaching Chinese language and culture at the Chinese School of CAACF.</p>
+    <a class="button" href="#chinese-teaching">Explore my teaching journey</a>
   </article>
   <article class="card">
     <p class="eyebrow">Digital</p>
     <h3>Web development & content</h3>
     <p>Placeholder for Orlando Chinese Association website work and content-management experience.</p>
   </article>
+</section>
+
+
+<section class="wrap section" id="chinese-teaching" aria-labelledby="chinese-teaching-heading" style="scroll-margin-top: 100px;">
+  <h2 id="chinese-teaching-heading">Chinese Teaching</h2>
+  <div class="card-grid">
+    {% assign teaching_posts = site.categories['chinese-teaching'] %}
+    {% for post in teaching_posts %}
+    <article class="card">
+      <p class="eyebrow">Side Hustle · Chinese Teaching</p>
+      <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
+      <p><time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%B %-d, %Y" }}</time></p>
+      <p>{{ post.excerpt | strip_html }}</p>
+      <a class="button" href="{{ post.url | relative_url }}">Read the post</a>
+    </article>
+    {% endfor %}
+  </div>
 </section>
 
 <section class="wrap section" id="business-support" aria-labelledby="business-support-heading" style="scroll-margin-top: 100px;">
