@@ -8,7 +8,7 @@ permalink: /
 <section class="hero">
   <p class="eyebrow">Rebecca Yener · Florida</p>
   <h1>A life built around curiosity, movement, and opportunity.</h1>
-  <p class="intro">Supply chain professional, real estate agent, fitness enthusiast, entrepreneur, and lifelong learner. This is my corner of the internet.</p>
+  <p class="intro">Supply chain professional, fitness enthusiast, entrepreneur, and lifelong learner. This is my corner of the internet.</p>
   <a class="button" href="{{ '/professional/' | relative_url }}">Explore my work ↓</a>
 </section>
 
