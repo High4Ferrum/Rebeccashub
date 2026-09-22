@@ -11,7 +11,7 @@ permalink: /contact/
     <h1>Let’s connect.</h1>
     <p class="intro">For professional opportunities, real estate inquiries, collaborations, or a simple hello.</p>
 
-    <form class="contact-form" action="https://formspree.io/f/YOUR_FORMSPREE_ID" method="POST">
+    <form class="contact-form" action="https://formspree.io/f/mrpbqkwj" method="POST">
       <input name="name" type="text" placeholder="Your name" required>
       <input name="email" type="email" placeholder="Your email address" required>
       <input name="subject" type="text" placeholder="Subject">
