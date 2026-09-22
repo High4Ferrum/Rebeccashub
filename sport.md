@@ -7,8 +7,8 @@ permalink: /sport/
 
 <section class="wrap page-header">
   <p class="eyebrow">Sport</p>
-  <h1>Strong, curious, always moving.</h1>
-  <p class="intro">Fitness, training, yoga, and the activities that keep me energized and learning.</p>
+  <h1>Strong, consistant, progressing.</h1>
+  <p class="intro">Fitness, training, yoga, and the activities that keep me energized and motivated.</p>
 </section>
 
 <section class="wrap section card-grid">
