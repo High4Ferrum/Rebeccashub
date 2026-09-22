@@ -15,8 +15,8 @@ permalink: /real-estate/
   <article class="card">
     <p class="eyebrow">SignOnline</p>
     <h3>Meet my SignOnline app</h3>
-    <p>Explore SignOnline, my app, and get in touch to learn more about it.</p>
-    <a class="button" href="{{ '/contact/' | relative_url }}">Ask about SignOnline</a>
+    <p>Explore my SignOnline app. Use the link below to get started.</p>
+    <a class="button" href="https://signonline.rebeccayener.com/">Use SignOnline Now</a>
   </article>
   <article class="card">
     <p class="eyebrow">Investment</p>
