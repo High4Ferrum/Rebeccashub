@@ -27,7 +27,8 @@ permalink: /side-hustle/
   <article class="card">
     <p class="eyebrow">Digital</p>
     <h3>Web development & content</h3>
-    <p>Placeholder for Orlando Chinese Association website work and content-management experience.</p>
+    <p>From my first HTML website in 1999 to airline web content and volunteering with OCA, I love finding new ways to solve problems on the web.</p>
+    <a class="button" href="#web-development">Explore my web development story</a>
   </article>
 </section>
 
@@ -79,3 +80,19 @@ permalink: /side-hustle/
   </div>
 </section>
 
+
+<section class="wrap section" id="web-development" aria-labelledby="web-development-heading" style="scroll-margin-top: 100px;">
+  <h2 id="web-development-heading">Web Development</h2>
+  <div class="card-grid">
+    {% assign web_posts = site.categories['web-development'] %}
+    {% for post in web_posts %}
+    <article class="card">
+      <p class="eyebrow">Side Hustle · Web Development</p>
+      <h3><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h3>
+      <p><time datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%B %-d, %Y" }}</time></p>
+      <p>{{ post.excerpt | strip_html }}</p>
+      <a class="button" href="{{ post.url | relative_url }}">Read the post</a>
+    </article>
+    {% endfor %}
+  </div>
+</section>
