@@ -15,7 +15,7 @@ permalink: /sport/
   <article class="card">
     <p class="eyebrow">Fitness</p>
     <h3>Training & performance</h3>
-    <p>Strength training, conditioning, boxing, running, swimming, yoga, and the workouts that keep me moving.</p>
+    <p>Strength training, conditioning, boxing, running, swimming, and the workouts that keep me moving.</p>
   </article>
   <article class="card">
     <p class="eyebrow">Yoga</p>
