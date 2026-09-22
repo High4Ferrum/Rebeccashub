@@ -24,6 +24,7 @@
       <a class="{% if page.section == 'contact' %}active{% endif %}" href="{{ '/contact/' | relative_url }}">Contact</a>
     </nav>
   </header>
+{% include search-bar.html %}
 
   <main>{{ content }}</main>
 
