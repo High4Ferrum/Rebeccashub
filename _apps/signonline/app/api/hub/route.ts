@@ -124,28 +124,28 @@ export async function POST(request: Request) {
  await record(t.id,`${user.email} adjusted their unfinished fields on ${doc.name}`);return Response.json({ok:true});
  }
  if (b.action === 'prepareRecipients') {
- const fields=JSON.parse(doc.fields);
+ const fields=JSON.parse(doc.fields).filter((f:any)=>!f.preparedText);
  if (!['Draft','Awaiting signatures'].includes(doc.status)||fields.some((f:any)=>f.value!==''&&f.value!==null&&f.value!==undefined)) return bad('A document with completed fields cannot be reassigned.');
  if (!fields.length||!Array.isArray(b.assignments)||b.assignments.length!==fields.length||new Set(b.assignments.map((a:any)=>a.id)).size!==fields.length) return bad('Assign every field to a signer.');
  const emails=new Map(b.assignments.map((a:any)=>[a.id,typeof a.email==='string'?a.email.trim().toLowerCase():'']));
  if(fields.some((f:any)=>!emails.has(f.id)||!emails.get(f.id)||(emails.get(f.id)!==user.email.toLowerCase()&&!t.participants.some((p:any)=>p.email===emails.get(f.id)))))return bad('Add each recipient as a participant before assigning their fields.');
- const updated=fields.map((f:any)=>({...f,email:emails.get(f.id)}));
+ const updated=JSON.parse(doc.fields).map((f:any)=>f.preparedText?f:{...f,email:emails.get(f.id)});
  const saved=await db().prepare("UPDATE documents SET fields = ?, status = 'Awaiting signatures' WHERE id = ? AND fields = ? AND status = ?").bind(JSON.stringify(updated),doc.id,doc.fields,doc.status).run();
  if(!saved.meta.changes)return bad('The document changed. Refresh before continuing.',409);
  await record(t.id,`${doc.name}: signing recipients saved`);return Response.json({ok:true});
  }
  if (b.action === 'fields') {
  if (doc.status !== 'Draft') return bad('Sent or signed documents are locked.');
- if (!Array.isArray(b.fields) || b.fields.length > 150 || b.fields.some((f: any) => !validFieldSize(f) || !['text','date','checkbox','initial','signature'].includes(f.type) || !Number.isInteger(f.page) || f.page < 1 || !Number.isFinite(f.x) || !Number.isFinite(f.y) || f.x < 0 || f.x > .75 || f.y < 0 || f.y > .95 || !f.id || typeof f.email !== 'string')) return bad('Invalid document fields.');
+ if (!Array.isArray(b.fields) || b.fields.length > 150 || b.fields.some((f: any) => !validFieldSize(f) || !['text','date','checkbox','initial','signature'].includes(f.type) || !Number.isInteger(f.page) || f.page < 1 || !Number.isFinite(f.x) || !Number.isFinite(f.y) || f.x < 0 || f.x > .75 || f.y < 0 || f.y > .95 || !f.id || typeof f.email !== 'string' || (f.preparedText!==undefined && (f.type!=='text'||typeof f.preparedText!=='string'||f.preparedText.length>150||/[^\x20-\x7E]/.test(f.preparedText))))) return bad('Invalid document fields.');
  const original = await bucket().get(doc.id); if (!original) return bad('Original PDF unavailable.', 503);
  const source = await PDFDocument.load(await original.arrayBuffer());
  if (b.fields.some((f: any) => f.page > source.getPageCount()) || new Set(b.fields.map((f: any)=>f.id)).size !== b.fields.length) return bad('Invalid page or duplicate field.');
- const saved = await db().prepare("UPDATE documents SET fields = ? WHERE id = ? AND status = 'Draft'").bind(JSON.stringify(b.fields.map((f: any) => ({ width:f.width??.24,height:f.height??.028,id: f.id, type: f.type, page: f.page, x: f.x, y: f.y, email: f.email.toLowerCase(), value: '' }))), doc.id).run();
+ const saved = await db().prepare("UPDATE documents SET fields = ? WHERE id = ? AND status = 'Draft'").bind(JSON.stringify(b.fields.map((f: any) => ({ width:f.width??.24,height:f.height??.028,id: f.id, type: f.type, page: f.page, x: f.x, y: f.y, email: f.preparedText?.trim()?user.email.toLowerCase():f.email.toLowerCase(), preparedText:f.type==='text'?String(f.preparedText||'').trim():'', preparedBy:f.preparedText?.trim()?user.email:null, value: '' }))), doc.id).run();
  if (!saved.meta.changes) return bad('The document was just sent. Refresh before continuing.', 409);
  await record(t.id, `Fields saved on ${doc.name}`); return Response.json({ ok: true });
  }
  if (b.action === 'request') {
- const fields = JSON.parse(doc.fields);
+ const fields = JSON.parse(doc.fields).filter((f:any)=>!f.preparedText);
  if (doc.status !== 'Draft' || !fields.length || fields.some((f: any) => !f.email || (f.email !== user.email.toLowerCase() && !t.participants.some((p: any) => p.email === f.email)))) return bad('Assign every field to a participant before requesting signatures.');
  const sent = await db().prepare("UPDATE documents SET status = 'Awaiting signatures' WHERE id = ? AND status = 'Draft' AND fields = ?").bind(doc.id, doc.fields).run();
  if (!sent.meta.changes) return bad('The document changed. Refresh before continuing.', 409);
@@ -153,7 +153,7 @@ export async function POST(request: Request) {
  }
  if (b.action === 'sign') {
  if (doc.status !== 'Awaiting signatures' || b.consent !== true || b.consentVersion !== TERMS_VERSION) return bad('This document is not ready to sign.');
- const fields = JSON.parse(doc.fields); const mine = fields.filter((f: any) => f.email === user.email.toLowerCase() && !f.value);
+ const fields = JSON.parse(doc.fields); const mine = fields.filter((f: any) => f.email === user.email.toLowerCase() && !f.value && !f.preparedText);
  if (!mine.length) return bad('No fields are assigned to your signed-in email.');
  const sourceFile=await bucket().get(doc.id);if(!sourceFile)return bad('Original PDF unavailable.',503);
  const sourceBytes=await sourceFile.arrayBuffer();
@@ -162,16 +162,22 @@ export async function POST(request: Request) {
  const v = b.values?.[f.id]; if (f.type === 'checkbox' ? v !== true : typeof v !== 'string' || !v.trim() || v.length > 150 || /[^\x20-\x7E]/.test(v)) return bad('Complete all your fields using standard English characters.');
  f.value = v; f.signedAt = audit.signedAt; f.signedBy = user.userId; f.audit = audit;
  }
- const done = fields.every((f: any) => f.value);
+ const done = fields.every((f: any) => f.value || f.preparedText);
  if (done) {
  const original = await bucket().get(doc.id); if (!original) return bad('Original PDF unavailable.', 503);
  const pdf = await PDFDocument.load(await original.arrayBuffer()); const font = await pdf.embedFont(StandardFonts.Helvetica); const cursive = await pdf.embedFont(StandardFonts.TimesRomanItalic);
  for (const f of fields) {
  const page = pdf.getPages()[f.page - 1]; if (!page) return bad('A field refers to a missing page.');
- const { width, height } = page.getSize(); const value = f.type === 'checkbox' ? 'X' : String(f.value);
+ const { width, height } = page.getSize(); const value = f.type === 'checkbox' ? 'X' : String(f.preparedText||f.value);
  const face = ['signature','initial'].includes(f.type) ? cursive : font;
  const size = Math.min(14, Math.max(1,height*(f.height??.028)-6), Math.max(1,width*(f.width??.24)-6) / Math.max(face.widthOfTextAtSize(value, 1), 1));
- page.drawText(value, { x: f.x * width + 3, y: height - f.y * height - 3 - size, size, font: face, color: rgb(.08,.16,.25) });
+ if(f.type==='signature'&&f.audit){
+ const lines=[value,'Email: '+f.audit.email,'Signed (UTC): '+f.audit.signedAt,'IP: '+(f.audit.ipAddress||'Not available')];
+ const boxWidth=width*(f.width??.24)-6,boxHeight=height*(f.height??.028)-4;
+ const rowHeight=boxHeight/4;
+ lines.forEach((line,i)=>{const chosen=i===0?face:font;const safe=line.replace(/[^\x20-\x7E]/g,'?');const point=Math.min(i===0?14:8,rowHeight*.75,boxWidth/Math.max(chosen.widthOfTextAtSize(safe,1),1));page.drawText(safe,{x:f.x*width+3,y:height-f.y*height-2-i*rowHeight-point,size:Math.max(.1,point),font:chosen,color:rgb(.08,.16,.25)});});
+ }else{ page.drawText(value, { x: f.x * width + 3, y: height - f.y * height - 3 - size, size, font: face, color: rgb(.08,.16,.25) });}
+
  }
  await bucket().put(await signedKey(doc.id, JSON.stringify(fields)), await pdf.save(), { httpMetadata: { contentType: 'application/pdf' } });
  }

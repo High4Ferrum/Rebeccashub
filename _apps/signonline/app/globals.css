@@ -17,3 +17,5 @@ body{font-size:16px}.sidebar nav button{font-size:14px}.workspace-switch{font-si
 .field-list>div{flex-wrap:wrap;gap:8px}.field-size-controls{display:flex;gap:8px;width:100%}.field-size-controls label{flex:1;margin:0;font-size:11px}.field-size-controls input{width:100%;min-width:0;padding:6px}
 
 .pdf-field.draggable{cursor:grab;touch-action:none;user-select:none}.pdf-field.draggable:active{cursor:grabbing}.pdf-field.draggable button{cursor:pointer}
+
+.pdf-field .pdf-text-input{min-width:0;width:100%;height:100%;padding:0;border:0;background:transparent;font:inherit;color:inherit;outline-offset:-1px}.field-drag-handle{cursor:grab;flex-shrink:0;touch-action:none;padding:2px}.signature-details{display:block;font:8px/1.25 system-ui}.prepared-text-control{width:100%}

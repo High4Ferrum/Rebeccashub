@@ -8,7 +8,7 @@ export default function ShareDocument({doc,transaction,user,notify,mutate,busy}:
  const [editing,setEditing]=useState(false);
  const emailAttempt=useRef<{selection:string,id:string}|null>(null);
  const [sending,setSending]=useState(false);
- const fields=current.fields||[];
+ const fields=(current.fields||[]).filter((f:any)=>!f.preparedText);
  const signed=fields.some((f:any)=>f.value!==''&&f.value!==null&&f.value!==undefined);
  const canPrepare=transaction.isOwner&&current.status!=='Signed'&&!signed;
  const emailFor=(f:any)=>assignments[f.id]??f.email;
