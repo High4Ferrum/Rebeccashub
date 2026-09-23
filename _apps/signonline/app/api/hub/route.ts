@@ -27,7 +27,7 @@ export async function GET(request: Request) {
  const q = new URL(request.url).searchParams;
  if(q.has('audit')){
  const doc:any=await db().prepare('SELECT * FROM documents WHERE id = ?').bind(q.get('audit')).first();
- if(!doc||!await transaction(doc.transaction_id,user))return bad('Document not found.',404);
+ if(!doc||doc.status==='Deleting'||!await transaction(doc.transaction_id,user))return bad('Document not found.',404);
  const original=await bucket().get(doc.id);if(!original)return bad('Original unavailable.',503);
  const fields=JSON.parse(doc.fields);const records=Array.from(new Map(fields.filter((f:any)=>f.audit).map((f:any)=>[f.audit.eventId,f.audit])).values());
  let completedPdfSha256=null;if(doc.status==='Signed'){const file=await bucket().get(await signedKey(doc.id,doc.fields));if(!file)return bad('Completed PDF unavailable.',503);completedPdfSha256=await hashBytes(await file.arrayBuffer());}
@@ -36,7 +36,7 @@ export async function GET(request: Request) {
  }
  if (q.has('file')) {
  const doc: any = await db().prepare('SELECT * FROM documents WHERE id = ?').bind(q.get('file')).first();
- if (!doc || !await transaction(doc.transaction_id, user)) return bad('Document not found.', 404);
+ if (!doc || doc.status==='Deleting' || !await transaction(doc.transaction_id, user)) return bad('Document not found.', 404);
  const file = await bucket().get(q.get('signed') === 'true' && doc.status === 'Signed' ? await signedKey(doc.id, doc.fields) : doc.id);
  if (!file) return bad('Document unavailable.', 404);
  return new Response(file.body, { headers: { 'Content-Type': 'application/pdf', 'Cache-Control': 'private, no-store', 'Content-Disposition': `${q.has('download') ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(doc.name)}` } });
@@ -45,7 +45,7 @@ export async function GET(request: Request) {
  const transactions = await Promise.all(rows.results.map(async (r: any) => {
  const docs = await db().prepare('SELECT * FROM documents WHERE transaction_id = ? ORDER BY created DESC').bind(r.id).all();
  const events = await db().prepare('SELECT * FROM events WHERE transaction_id = ? ORDER BY created DESC LIMIT 40').bind(r.id).all();
- return { id: r.id, ...JSON.parse(r.data), isOwner: r.owner === user.userId, documents: docs.results.map((d: any) => ({ ...d, fields: JSON.parse(d.fields) })), events: events.results };
+ return { id: r.id, ...JSON.parse(r.data), isOwner: r.owner === user.userId, documents: docs.results.filter((d:any)=>d.status!=='Deleting'||r.owner===user.userId).map((d: any) => ({ ...d, fields: JSON.parse(d.fields) })), events: events.results };
  }));
  return Response.json({ transactions, user: { name: user.fullName || user.email, email: user.email, isWorkspaceOwner: user.email.toLowerCase() === config().WORKSPACE_OWNER_EMAIL?.toLowerCase() } }, { headers: { 'Cache-Control': 'no-store' } });
  } catch (e) { console.error(e); return bad('The workspace could not be loaded. Please try again.', 503); }
@@ -95,6 +95,21 @@ export async function POST(request: Request) {
  }
  const doc: any = await db().prepare('SELECT * FROM documents WHERE id = ? AND transaction_id = ?').bind(b.documentId, t.id).first();
  if (!doc) return bad('Document not found.', 404);
+ if(b.action==='deleteDocument'){
+ if(b.confirmDelete!==true)return bad('Confirm document deletion first.');
+ if(doc.status!=='Deleting'){
+ const locked=await db().prepare("UPDATE documents SET status = 'Deleting' WHERE id = ? AND fields = ? AND status = ?").bind(doc.id,doc.fields,doc.status).run();
+ if(!locked.meta.changes)return bad('The document changed. Refresh before deleting.',409);
+ }
+ try{
+ await bucket().delete(doc.id);
+ let cursor:string|undefined;
+ do{const objects=await bucket().list({prefix:doc.id+'/',cursor});if(objects.objects.length)await bucket().delete(objects.objects.map(o=>o.key));cursor=objects.truncated?objects.cursor:undefined;}while(cursor);
+ }catch{return bad('Deletion is incomplete. Retry Delete document to finish removing the stored files.',503);}
+ await db().prepare("DELETE FROM documents WHERE id = ? AND status = 'Deleting'").bind(doc.id).run();
+ await record(t.id,user.email+' deleted '+doc.name+' and its document files');return Response.json({ok:true});
+ }
+ if(doc.status==='Deleting')return bad('This document is being deleted.',409);
  if(b.action==='email'){
  if(typeof b.requestId!=='string'||!/^[a-zA-Z0-9-]{16,80}$/.test(b.requestId))return bad('Invalid email request.');
  let recipients:string[];
@@ -181,8 +196,8 @@ export async function POST(request: Request) {
  }
  await bucket().put(await signedKey(doc.id, JSON.stringify(fields)), await pdf.save(), { httpMetadata: { contentType: 'application/pdf' } });
  }
- const result = await db().prepare('UPDATE documents SET fields = ?, status = ? WHERE id = ? AND fields = ?').bind(JSON.stringify(fields), done ? 'Signed' : doc.status, doc.id, doc.fields).run();
- if (!result.meta.changes) return bad('Another signer just updated this document. Refresh and try again.', 409);
+ const result = await db().prepare('UPDATE documents SET fields = ?, status = ? WHERE id = ? AND fields = ? AND status = ?').bind(JSON.stringify(fields), done ? 'Signed' : doc.status, doc.id, doc.fields,doc.status).run();
+ if (!result.meta.changes) {if(done)await bucket().delete(await signedKey(doc.id,JSON.stringify(fields)));return bad('Another signer just updated this document. Refresh and try again.', 409);}
  await record(t.id, `${user.email} completed their fields on ${doc.name}${done ? ' — all signatures complete' : ''}`); return Response.json({ ok: true });
  }
  return bad('Unknown action.');
