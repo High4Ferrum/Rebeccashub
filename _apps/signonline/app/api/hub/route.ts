@@ -151,11 +151,12 @@ export async function POST(request: Request) {
  }
  if (b.action === 'fields') {
  if (doc.status !== 'Draft') return bad('Sent or signed documents are locked.');
- if (!Array.isArray(b.fields) || b.fields.length > 150 || b.fields.some((f: any) => !validFieldSize(f) || !['text','date','checkbox','initial','signature'].includes(f.type) || !Number.isInteger(f.page) || f.page < 1 || !Number.isFinite(f.x) || !Number.isFinite(f.y) || f.x < 0 || f.x > .75 || f.y < 0 || f.y > .95 || !f.id || typeof f.email !== 'string' || (f.preparedText!==undefined && (f.type!=='text'||typeof f.preparedText!=='string'||f.preparedText.length>150||/[^\x20-\x7E]/.test(f.preparedText))))) return bad('Invalid document fields.');
+ if (!Array.isArray(b.fields) || b.fields.length > 150 || b.fields.some((f: any) => !validFieldSize(f) || !['text','date','checkbox','initial','signature'].includes(f.type) || !Number.isInteger(f.page) || f.page < 1 || !Number.isFinite(f.x) || !Number.isFinite(f.y) || f.x < 0 || f.x > .75 || f.y < 0 || f.y > .95 || !f.id || typeof f.email !== 'string' || (f.preparedText!==undefined && (!['text','date','checkbox'].includes(f.type)&&!!f.preparedText||typeof f.preparedText!=='string'||f.preparedText.length>150||/[^\x20-\x7E]/.test(f.preparedText))))) return bad('Invalid document fields.');
  const original = await bucket().get(doc.id); if (!original) return bad('Original PDF unavailable.', 503);
  const source = await PDFDocument.load(await original.arrayBuffer());
+ if(b.fields.some((f:any)=>f.preparedText&&((f.type==='date'&&!/^\d{4}-\d{2}-\d{2}$/.test(f.preparedText))||(f.type==='checkbox'&&f.preparedText!=='X'))))return bad('Enter a valid date or tick.');
  if (b.fields.some((f: any) => f.page > source.getPageCount()) || new Set(b.fields.map((f: any)=>f.id)).size !== b.fields.length) return bad('Invalid page or duplicate field.');
- const saved = await db().prepare("UPDATE documents SET fields = ? WHERE id = ? AND status = 'Draft'").bind(JSON.stringify(b.fields.map((f: any) => ({ width:f.width??.24,height:f.height??.028,id: f.id, type: f.type, page: f.page, x: f.x, y: f.y, email: f.preparedText?.trim()?user.email.toLowerCase():f.email.toLowerCase(), preparedText:f.type==='text'?String(f.preparedText||'').trim():'', preparedBy:f.preparedText?.trim()?user.email:null, value: '' }))), doc.id).run();
+ const saved = await db().prepare("UPDATE documents SET fields = ? WHERE id = ? AND status = 'Draft'").bind(JSON.stringify(b.fields.map((f: any) => ({ width:f.width??.24,height:f.height??.028,id: f.id, type: f.type, page: f.page, x: f.x, y: f.y, email: f.preparedText?.trim()?user.email.toLowerCase():f.email.toLowerCase(), preparedText:['text','date','checkbox'].includes(f.type)?String(f.preparedText||'').trim():'', preparedBy:f.preparedText?.trim()?user.email:null, value: '' }))), doc.id).run();
  if (!saved.meta.changes) return bad('The document was just sent. Refresh before continuing.', 409);
  await record(t.id, `Fields saved on ${doc.name}`); return Response.json({ ok: true });
  }
@@ -186,7 +187,8 @@ export async function POST(request: Request) {
  const { width, height } = page.getSize(); const value = f.type === 'checkbox' ? 'X' : String(f.preparedText||f.value);
  const face = ['signature','initial'].includes(f.type) ? cursive : font;
  const size = Math.min(14, Math.max(1,height*(f.height??.028)-6), Math.max(1,width*(f.width??.24)-6) / Math.max(face.widthOfTextAtSize(value, 1), 1));
- if(f.type==='signature'&&f.audit){
+ if(f.type==='checkbox'){const x=f.x*width+2,y=height-f.y*height-2;const w=Math.min(width*(f.width??.24)-4,height*(f.height??.028)-4);page.drawLine({start:{x,y:y-w*.55},end:{x:x+w*.35,y:y-w},thickness:1.5,color:rgb(.08,.16,.25)});page.drawLine({start:{x:x+w*.35,y:y-w},end:{x:x+w,y},thickness:1.5,color:rgb(.08,.16,.25)});
+ }else if(f.type==='signature'&&f.audit){
  const lines=[value,'Email: '+f.audit.email,'Signed (UTC): '+f.audit.signedAt,'IP: '+(f.audit.ipAddress||'Not available')];
  const boxWidth=width*(f.width??.24)-6,boxHeight=height*(f.height??.028)-4;
  const rowHeight=boxHeight/4;
